@@ -1,0 +1,65 @@
+{
+  "name": "watch-dog",
+  "version": "1.0.0",
+  "description": "Professional WatchDog tool to monitor and auto-restart applications.",
+  "main": "dist-electron/main.js",
+  "author": "gowinda",
+  "scripts": {
+    "dev": "vite",
+    "clean": "rimraf dist dist-electron release",
+    "build": "vite build && electron-builder --win",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "electron-log": "^5.0.0",
+    "ps-list": "^6.3.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@vitejs/plugin-react": "^4.2.1",
+    "electron": "^30.0.0",
+    "electron-builder": "22.14.13",
+    "rimraf": "^5.0.0",
+    "typescript": "^5.4.2",
+    "vite": "^5.2.0",
+    "vite-plugin-electron": "^0.28.6",
+    "vite-plugin-electron-renderer": "^0.14.5"
+  },
+  "build": {
+    "appId": "com.gowinda.watchdog",
+    "productName": "WatchDog Pro",
+    "directories": {
+      "output": "release"
+    },
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        },
+        {
+          "target": "portable",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "publisherName": "gowinda"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "shortcutName": "WatchDog Pro"
+    },
+    "files": [
+      "dist",
+      "dist-electron"
+    ]
+  }
+}

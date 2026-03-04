@@ -1,0 +1,12 @@
+[
+    {
+        "name": "Notepad",
+        "path": "C:\\Windows\\system32\\notepad.exe",
+        "autoRestart": true
+    },
+    {
+        "name": "Calculator",
+        "path": "C:\\Windows\\System32\\calc.exe",
+        "autoRestart": false
+    }
+]

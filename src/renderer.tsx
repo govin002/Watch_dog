@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import ReactDOM from 'react-dom/client';
+import logo from './assets/logo.png';
 
 interface AppEntry {
     id: string;
@@ -8,6 +9,9 @@ interface AppEntry {
     autoRestart: boolean;
     status: 'running' | 'stopped' | 'restarted' | 'checking';
     restartCount: number;
+    memoryLimitEnabled: boolean;
+    memoryLimitMB: number;
+    currentMemoryUsage?: number;
 }
 
 interface LogEntry {
@@ -21,7 +25,7 @@ interface LogEntry {
 declare global {
     interface Window {
         watchdog: {
-            getConfig: () => Promise<{ apps: AppEntry[], interval: number, logRetentionDays: number }>;
+            getConfig: () => Promise<{ apps: AppEntry[], interval: number, logRetentionDays: number, startMinimized: boolean, runOnStartup: boolean }>;
             getLogs: () => Promise<LogEntry[]>;
             browseFile: () => Promise<string | null>;
             addApp: (app: { name: string, path: string }) => Promise<AppEntry>;
@@ -30,6 +34,11 @@ declare global {
             updateInterval: (interval: number) => Promise<boolean>;
             updateLogRetention: (days: number) => Promise<boolean>;
             openConfigFolder: () => Promise<void>;
+            toggleMemoryProtection: (data: { id: string, value: boolean }) => Promise<boolean>;
+            updateMemoryLimit: (data: { id: string, value: number }) => Promise<boolean>;
+            updateStartMinimized: (value: boolean) => Promise<boolean>;
+            updateRunOnStartup: (value: boolean) => Promise<boolean>;
+            createDesktopShortcut: () => Promise<boolean>;
             onStatusUpdate: (callback: (apps: AppEntry[]) => void) => () => void;
             onLogsUpdated: (callback: (logs: LogEntry[]) => void) => () => void;
         };
@@ -47,12 +56,16 @@ const App: React.FC = () => {
     const [activeTab, setActiveTab] = useState<'monitor' | 'logs' | 'settings' | 'about'>('monitor');
     const [selectedAppId, setSelectedAppId] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [runOnStartup, setRunOnStartup] = useState(false);
+    const [startMinimized, setStartMinimized] = useState(false);
 
     useEffect(() => {
         window.watchdog.getConfig().then(cfg => {
             setApps(cfg.apps);
             setIntervalVal(cfg.interval);
             setRetentionDays(cfg.logRetentionDays || 1);
+            setRunOnStartup(cfg.runOnStartup || false);
+            setStartMinimized(cfg.startMinimized || false);
         });
         window.watchdog.getLogs().then(setLogs);
 
@@ -110,10 +123,38 @@ const App: React.FC = () => {
         await window.watchdog.updateLogRetention(num);
     };
 
+    const handleMemoryToggle = async (id: string, current: boolean) => {
+        const newVal = !current;
+        await window.watchdog.toggleMemoryProtection({ id, value: newVal });
+        setApps(apps.map(a => a.id === id ? { ...a, memoryLimitEnabled: newVal } : a));
+    };
+
+    const handleMemoryLimitChange = async (id: string, val: string) => {
+        const num = parseInt(val);
+        if (isNaN(num) || num < 10) return;
+        await window.watchdog.updateMemoryLimit({ id, value: num });
+        setApps(apps.map(a => a.id === id ? { ...a, memoryLimitMB: num } : a));
+    };
+
+    const toggleRunOnStartup = async () => {
+        const newVal = !runOnStartup;
+        setRunOnStartup(newVal);
+        await window.watchdog.updateRunOnStartup(newVal);
+    };
+
+    const toggleStartMinimized = async () => {
+        const newVal = !startMinimized;
+        setStartMinimized(newVal);
+        await window.watchdog.updateStartMinimized(newVal);
+    };
+
     return (
         <div className="container">
             <header className="header">
-                <h1 className="title">🛡️ WatchDog Pro</h1>
+                <div className="title-container">
+                    <img src={logo} alt="WatchDog Logo" className="header-logo" />
+                    <h1 className="title">WatchDog Pro</h1>
+                </div>
                 <nav className="tabs">
                     <button className={activeTab === 'monitor' ? 'active' : ''} onClick={() => setActiveTab('monitor')}>Monitoring</button>
                     <button className={activeTab === 'logs' ? 'active' : ''} onClick={() => setActiveTab('logs')}>History Logs</button>
@@ -182,19 +223,44 @@ const App: React.FC = () => {
                                         <span className="app-name">{app.name}</span>
                                         <span className={`status-badge status-${app.status}`}>{app.status}</span>
                                         {app.restartCount > 0 && <span className="restart-count">Restarts: {app.restartCount}</span>}
+                                        {app.status === 'running' && app.currentMemoryUsage !== undefined && (
+                                            <span className="memory-usage">RAM: {app.currentMemoryUsage} MB</span>
+                                        )}
                                     </div>
                                     <div className="app-path">{app.path}</div>
                                 </div>
                                 <div className="app-controls">
-                                    <div className="auto-toggle">
-                                        <span>Auto-Restart</span>
-                                        <label className="toggle-switch">
-                                            <input type="checkbox" checked={app.autoRestart} onChange={() => handleToggle(app.id, app.autoRestart)} />
-                                            <span className="slider"></span>
-                                        </label>
+                                    <div className="control-switches">
+                                        <div className="auto-toggle">
+                                            <span>Auto-Restart</span>
+                                            <label className="toggle-switch">
+                                                <input type="checkbox" checked={app.autoRestart} onChange={() => handleToggle(app.id, app.autoRestart)} />
+                                                <span className="slider"></span>
+                                            </label>
+                                        </div>
+                                        <div className="auto-toggle memory-protection-toggle">
+                                            <span>RAM Protection</span>
+                                            <label className="toggle-switch">
+                                                <input type="checkbox" checked={app.memoryLimitEnabled} onChange={() => handleMemoryToggle(app.id, app.memoryLimitEnabled)} />
+                                                <span className="slider"></span>
+                                            </label>
+                                            {app.memoryLimitEnabled && (
+                                                <div className="memory-limit-input">
+                                                    <input
+                                                        type="number"
+                                                        value={app.memoryLimitMB}
+                                                        onChange={e => handleMemoryLimitChange(app.id, e.target.value)}
+                                                        min="10"
+                                                    />
+                                                    <span>MB</span>
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
-                                    <button className="btn btn-sm" onClick={() => { setSelectedAppId(app.id); setActiveTab('logs'); }}>History</button>
-                                    <button className="btn-icon delete" onClick={() => handleRemove(app.id)}>🗑️</button>
+                                    <div className="btn-group">
+                                        <button className="btn btn-sm" onClick={() => { setSelectedAppId(app.id); setActiveTab('logs'); }}>History</button>
+                                        <button className="btn-icon delete" onClick={() => handleRemove(app.id)}>🗑️</button>
+                                    </div>
                                 </div>
                             </div>
                         ))}
@@ -252,6 +318,26 @@ const App: React.FC = () => {
                             <p className="help-text">Logs older than this will be permanently removed to keep the app lightweight.</p>
                         </div>
                         <div className="setting-item">
+                            <label>System Integration</label>
+                            <div className="startup-settings">
+                                <div className="setting-toggle">
+                                    <span>Run on System Startup</span>
+                                    <label className="toggle-switch">
+                                        <input type="checkbox" checked={runOnStartup} onChange={toggleRunOnStartup} />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+                                <div className="setting-toggle">
+                                    <span>Start Minimized to Tray</span>
+                                    <label className="toggle-switch">
+                                        <input type="checkbox" checked={startMinimized} onChange={toggleStartMinimized} />
+                                        <span className="slider"></span>
+                                    </label>
+                                </div>
+                            </div>
+                            <p className="help-text">Manage how WatchDog Pro behaves when your computer starts.</p>
+                        </div>
+                        <div className="setting-item">
                             <label>Data & Logs Storage</label>
                             <div className="storage-control">
                                 <button className="btn" onClick={() => window.watchdog.openConfigFolder()}>📂 Open AppData Folder</button>
@@ -261,11 +347,12 @@ const App: React.FC = () => {
                     </div>
                 </section>
             )}
+
             {activeTab === 'about' && (
                 <section className="tab-content">
                     <div className="about-card">
                         <div className="about-header">
-                            <span className="about-icon">🛡️</span>
+                            <img src={logo} alt="WatchDog Logo" className="about-logo" />
                             <div>
                                 <h2 className="about-name">WatchDog Pro</h2>
                                 <p className="about-version">Version 1.0.0</p>

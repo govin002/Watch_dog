@@ -10,6 +10,11 @@ contextBridge.exposeInMainWorld('watchdog', {
     updateInterval: (interval: number) => ipcRenderer.invoke('update-interval', interval),
     updateLogRetention: (days: number) => ipcRenderer.invoke('update-log-retention', days),
     openConfigFolder: () => ipcRenderer.invoke('open-config-folder'),
+    toggleMemoryProtection: (data: { id: string, value: boolean }) => ipcRenderer.invoke('toggle-memory-protection', data),
+    updateMemoryLimit: (data: { id: string, value: number }) => ipcRenderer.invoke('update-memory-limit', data),
+    updateStartMinimized: (value: boolean) => ipcRenderer.invoke('update-start-minimized', value),
+    updateRunOnStartup: (value: boolean) => ipcRenderer.invoke('update-run-on-startup', value),
+    createDesktopShortcut: () => ipcRenderer.invoke('create-desktop-shortcut'),
 
     onStatusUpdate: (callback: (apps: any[]) => void) => {
         const subscription = (_event: IpcRendererEvent, apps: any[]) => callback(apps);

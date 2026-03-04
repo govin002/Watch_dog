@@ -42,12 +42,29 @@ body {
   background: var(--bg-card);
 }
 
+.title-container {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.header-logo {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  transition: transform 0.3s ease;
+}
+
+.header-logo:hover {
+  transform: scale(1.1);
+}
+
 .title {
   margin: 0;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-size: 1.5rem;
+  font-weight: 700;
   color: var(--text-main);
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
 }
 
 .tabs {
@@ -227,15 +244,86 @@ body {
   border: 1px solid rgba(63, 185, 80, 0.2);
 }
 
+.memory-usage {
+  font-size: 0.75rem;
+  color: var(--accent);
+  background: rgba(47, 129, 247, 0.1);
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  border: 1px solid rgba(47, 129, 247, 0.2);
+}
+
 .app-controls {
   display: flex;
   align-items: center;
-  gap: 1rem;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.control-switches {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+.memory-protection-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.memory-limit-input {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: 0.5rem;
+}
+
+.memory-limit-input input {
+  width: 50px;
+  padding: 0.2rem 0.4rem;
+  background: var(--bg-input);
+  border: 1px solid var(--border);
+  color: var(--text-main);
+  border-radius: 4px;
+  font-size: 0.75rem;
+}
+
+.memory-limit-input span {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+}
+
+.btn-group {
+  display: flex;
+  gap: 0.5rem;
 }
 
 .btn-sm {
   padding: 0.25rem 0.5rem;
   font-size: 0.75rem;
+}
+
+/* Settings - Startup Integration */
+.startup-settings {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  background: var(--bg-input);
+  padding: 1rem;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  margin-top: 0.25rem;
+}
+
+.setting-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.setting-toggle span {
+  font-size: 0.85rem;
 }
 
 /* Log Filters */
@@ -514,6 +602,14 @@ input:checked+.slider:before {
   margin-bottom: 2rem;
   padding-bottom: 1.5rem;
   border-bottom: 1px solid var(--border);
+}
+
+.about-logo {
+  width: 64px;
+  height: 64px;
+  object-fit: contain;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
 }
 
 .about-icon {
